@@ -1,0 +1,320 @@
+EESchema Schematic File Version 4
+LIBS:virtual_clues-cache
+EELAYER 30 0
+EELAYER END
+$Descr A4 11693 8268
+encoding utf-8
+Sheet 1 1
+Title ""
+Date ""
+Rev ""
+Comp ""
+Comment1 ""
+Comment2 ""
+Comment3 ""
+Comment4 ""
+$EndDescr
+$Comp
+L MCU_Module:Arduino_Nano_v3.x A1
+U 1 1 5D6FD427
+P 3300 3800
+F 0 "A1" H 3300 2711 50  0001 C CNN
+F 1 "Arduino_Nano" H 3300 3800 50  0000 C CNN
+F 2 "Module:Arduino_Nano_WithMountingHoles" H 3450 2850 50  0001 L CNN
+F 3 "http://www.mouser.com/pdfdocs/Gravitech_Arduino_Nano3_0.pdf" H 3300 2800 50  0001 C CNN
+	1    3300 3800
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:VCC #PWR0101
+U 1 1 5D6FE742
+P 3500 2550
+F 0 "#PWR0101" H 3500 2400 50  0001 C CNN
+F 1 "VCC" H 3517 2723 50  0000 C CNN
+F 2 "" H 3500 2550 50  0001 C CNN
+F 3 "" H 3500 2550 50  0001 C CNN
+	1    3500 2550
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:+12V #PWR0102
+U 1 1 5D6FEB13
+P 3200 2550
+F 0 "#PWR0102" H 3200 2400 50  0001 C CNN
+F 1 "+12V" H 3215 2723 50  0000 C CNN
+F 2 "" H 3200 2550 50  0001 C CNN
+F 3 "" H 3200 2550 50  0001 C CNN
+	1    3200 2550
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:GND #PWR0103
+U 1 1 5D6FF2B1
+P 1150 2300
+F 0 "#PWR0103" H 1150 2050 50  0001 C CNN
+F 1 "GND" H 1155 2127 50  0000 C CNN
+F 2 "" H 1150 2300 50  0001 C CNN
+F 3 "" H 1150 2300 50  0001 C CNN
+	1    1150 2300
+	1    0    0    -1  
+$EndComp
+$Comp
+L Device:Thermistor_NTC #mouseThermistor1
+U 1 1 5D6FF83B
+P 5650 4350
+F 0 "#mouseThermistor1" H 5748 4396 50  0000 L CNN
+F 1 "10k" H 5748 4305 50  0000 L CNN
+F 2 "" H 5650 4400 50  0001 C CNN
+F 3 "~" H 5650 4400 50  0001 C CNN
+	1    5650 4350
+	1    0    0    -1  
+$EndComp
+$Comp
+L Device:R refResistor1
+U 1 1 5D70033D
+P 4700 3550
+F 0 "refResistor1" H 4770 3596 50  0000 L CNN
+F 1 "10k" H 4770 3505 50  0000 L CNN
+F 2 "" V 4630 3550 50  0001 C CNN
+F 3 "~" H 4700 3550 50  0001 C CNN
+	1    4700 3550
+	1    0    0    -1  
+$EndComp
+$Comp
+L Sensor_Temperature:DS18B20 #TempSenso1
+U 1 1 5D700EE6
+P 1200 3550
+F 0 "#TempSenso1" H 970 3596 50  0000 R CNN
+F 1 "DS18B20" H 970 3505 50  0000 R CNN
+F 2 "Package_TO_SOT_THT:TO-92_Inline" H 200 3300 50  0001 C CNN
+F 3 "http://datasheets.maximintegrated.com/en/ds/DS18B20.pdf" H 1050 3800 50  0001 C CNN
+	1    1200 3550
+	1    0    0    -1  
+$EndComp
+$Comp
+L Device:Heater #heatMat1
+U 1 1 5D701DB2
+P 6100 1900
+F 0 "#heatMat1" H 6170 1946 50  0000 L CNN
+F 1 "10" H 6170 1855 50  0000 L CNN
+F 2 "" V 6030 1900 50  0001 C CNN
+F 3 "~" H 6100 1900 50  0001 C CNN
+	1    6100 1900
+	1    0    0    -1  
+$EndComp
+$Comp
+L Device:LED D1
+U 1 1 5D702678
+P 7600 2050
+F 0 "D1" H 7593 2266 50  0000 C CNN
+F 1 "heaterLed" H 7593 2175 50  0000 C CNN
+F 2 "LED_THT:LED_D5.0mm" H 7600 2050 50  0001 C CNN
+F 3 "~" H 7600 2050 50  0001 C CNN
+	1    7600 2050
+	1    0    0    -1  
+$EndComp
+$Comp
+L Device:LED powerLed1
+U 1 1 5D7034E1
+P 1150 1900
+F 0 "powerLed1" H 1143 2116 50  0000 C CNN
+F 1 "green" H 1143 2025 50  0000 C CNN
+F 2 "" H 1150 1900 50  0001 C CNN
+F 3 "~" H 1150 1900 50  0001 C CNN
+	1    1150 1900
+	0    1    1    0   
+$EndComp
+$Comp
+L Device:R led_res_1
+U 1 1 5D705562
+P 1150 1400
+F 0 "led_res_1" H 1220 1446 50  0000 L CNN
+F 1 "560" H 1220 1355 50  0000 L CNN
+F 2 "" V 1080 1400 50  0001 C CNN
+F 3 "~" H 1150 1400 50  0001 C CNN
+	1    1150 1400
+	1    0    0    -1  
+$EndComp
+$Comp
+L Device:R led_res_2
+U 1 1 5D7055DC
+P 8450 3550
+F 0 "led_res_2" H 8520 3596 50  0000 L CNN
+F 1 "150" H 8520 3505 50  0000 L CNN
+F 2 "" V 8380 3550 50  0001 C CNN
+F 3 "~" H 8450 3550 50  0001 C CNN
+	1    8450 3550
+	1    0    0    -1  
+$EndComp
+$Comp
+L Transistor_FET:IRLB8721PBF Q1
+U 1 1 5D6FE287
+P 7500 4450
+F 0 "Q1" H 7706 4496 50  0000 L CNN
+F 1 "IRLB8721PBF" H 7706 4405 50  0000 L CNN
+F 2 "Package_TO_SOT_THT:TO-220-3_Vertical" H 7750 4375 50  0001 L CIN
+F 3 "http://www.infineon.com/dgdl/irlb8721pbf.pdf?fileId=5546d462533600a40153566056732591" H 7500 4450 50  0001 L CNN
+	1    7500 4450
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	3200 2550 3200 2700
+Wire Wire Line
+	3500 2550 3500 2700
+$Comp
+L power:GND #PWR0104
+U 1 1 5D7053A8
+P 3300 5050
+F 0 "#PWR0104" H 3300 4800 50  0001 C CNN
+F 1 "GND" H 3305 4877 50  0000 C CNN
+F 2 "" H 3300 5050 50  0001 C CNN
+F 3 "" H 3300 5050 50  0001 C CNN
+	1    3300 5050
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	3300 4800 3300 4950
+Wire Wire Line
+	3400 4800 3400 4950
+Wire Wire Line
+	3400 4950 3300 4950
+Connection ~ 3300 4950
+Wire Wire Line
+	3300 4950 3300 5050
+Wire Wire Line
+	3800 3800 4700 3800
+Wire Wire Line
+	4700 3800 4700 3700
+Connection ~ 4700 3800
+Wire Wire Line
+	4700 4950 3400 4950
+Connection ~ 3400 4950
+Wire Wire Line
+	3500 2700 3900 2700
+Wire Wire Line
+	4700 2700 4700 3400
+Connection ~ 3500 2700
+Wire Wire Line
+	3500 2700 3500 2800
+Wire Wire Line
+	3800 3600 3900 3600
+Wire Wire Line
+	3900 3600 3900 2700
+Connection ~ 3900 2700
+Wire Wire Line
+	3900 2700 4700 2700
+$Comp
+L power:+12V #PWR0105
+U 1 1 5D709963
+P 1150 1050
+F 0 "#PWR0105" H 1150 900 50  0001 C CNN
+F 1 "+12V" H 1165 1223 50  0000 C CNN
+F 2 "" H 1150 1050 50  0001 C CNN
+F 3 "" H 1150 1050 50  0001 C CNN
+	1    1150 1050
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	1150 1050 1150 1250
+Wire Wire Line
+	1150 1550 1150 1750
+Wire Wire Line
+	1150 2050 1150 2300
+$Comp
+L Connector:Screw_Terminal_01x03 J1
+U 1 1 5D712AB9
+P 1800 3550
+F 0 "J1" H 1718 3225 50  0000 C CNN
+F 1 "Screw_Terminal_01x03" H 1718 3316 50  0000 C CNN
+F 2 "" H 1800 3550 50  0001 C CNN
+F 3 "~" H 1800 3550 50  0001 C CNN
+	1    1800 3550
+	-1   0    0    1   
+$EndComp
+Wire Wire Line
+	2000 3650 2100 3650
+Wire Wire Line
+	2100 3650 2100 4950
+Wire Wire Line
+	2100 4950 3300 4950
+Wire Wire Line
+	2000 3450 2100 3450
+Wire Wire Line
+	2100 3450 2100 2700
+Wire Wire Line
+	2100 2700 3200 2700
+Connection ~ 3200 2700
+Wire Wire Line
+	3200 2700 3200 2800
+Wire Wire Line
+	2000 3550 2200 3550
+Wire Wire Line
+	2200 3550 2200 3400
+Wire Wire Line
+	2200 3400 2800 3400
+Wire Wire Line
+	1500 3550 2000 3550
+Connection ~ 2000 3550
+Wire Wire Line
+	1450 3850 1450 3650
+Wire Wire Line
+	1450 3650 2000 3650
+Connection ~ 2000 3650
+Wire Wire Line
+	1200 3250 1450 3250
+Wire Wire Line
+	1450 3250 1450 3450
+Wire Wire Line
+	1450 3450 2000 3450
+Connection ~ 2000 3450
+Wire Wire Line
+	1200 3850 1450 3850
+$Comp
+L Connector:Screw_Terminal_01x02 mouseTemp
+U 1 1 5D71B4B1
+P 4900 4400
+F 0 "mouseTemp" H 4500 4500 50  0000 L CNN
+F 1 "mouseTemp" H 4500 4500 50  0001 L CNN
+F 2 "" H 4900 4400 50  0001 C CNN
+F 3 "~" H 4900 4400 50  0001 C CNN
+	1    4900 4400
+	-1   0    0    1   
+$EndComp
+$Comp
+L Connector:Screw_Terminal_01x02 J?
+U 1 1 5D71BCD2
+P 5050 1500
+F 0 "J?" H 5130 1492 50  0000 L CNN
+F 1 "Screw_Terminal_01x02" H 5130 1401 50  0000 L CNN
+F 2 "" H 5050 1500 50  0001 C CNN
+F 3 "~" H 5050 1500 50  0001 C CNN
+	1    5050 1500
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	5450 4400 5450 4550
+Wire Wire Line
+	5450 4550 5650 4550
+Wire Wire Line
+	5650 4550 5650 4500
+Wire Wire Line
+	5650 4200 5650 4150
+Wire Wire Line
+	5650 4150 5450 4150
+Wire Wire Line
+	5450 4150 5450 4300
+Wire Wire Line
+	5450 4300 5100 4300
+Wire Wire Line
+	5100 4400 5450 4400
+Wire Wire Line
+	5100 4400 4700 4400
+Connection ~ 5100 4400
+Wire Wire Line
+	4700 4400 4700 4950
+Wire Wire Line
+	4700 4300 5100 4300
+Wire Wire Line
+	4700 3800 4700 4300
+Connection ~ 5100 4300
+$EndSCHEMATC
