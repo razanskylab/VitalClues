@@ -24,8 +24,7 @@
 
 float maxPadTemp = 50;
 float currentTemp;
-bool heatPadOn = false;
-float targetTemperature = 37; // in Celcius, do not use more than 50!!!
+float targetTemperature = 48; // in Celcius, do not use more than 50!!!
 float analTemp; // temperature measured in anus
 float padTemp;
 float faultTemperature = -120;
@@ -130,6 +129,8 @@ void loop(void) {
   Serial.print(analTemp);
   Serial.print(" ");
   Serial.print(padTemp);
+  Serial.print(" ");
+  Serial.print(pwmValue);
   Serial.print(" ");
   Serial.println(targetTemperature);
   // Serial.println(targetTemperature);
