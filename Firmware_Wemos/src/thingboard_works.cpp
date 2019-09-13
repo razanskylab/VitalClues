@@ -229,7 +229,6 @@ void loop(void) {
     reconnect();
   }
 
-
   lcd.home();
 
   analTemp = get_analog_temp();
@@ -261,5 +260,4 @@ void loop(void) {
   lcd.print("%");
 
   tb.loop();
-
 }

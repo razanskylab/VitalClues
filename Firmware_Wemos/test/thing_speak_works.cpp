@@ -1,26 +1,40 @@
 #include <Arduino.h>
 #include <OneWire.h>
 #include <DallasTemperature.h>
-// #include <WiFiEsp.h>
 #include <ESP8266WiFi.h>
+#include <ThingSpeak.h>
 #include <Wire.h>
 #include <LiquidCrystal_I2C.h>
-#include <ThingsBoard.h>
 
+#include "AdafruitIO_WiFi.h"
 
+#define IO_USERNAME  "r0oland"
+#define IO_KEY       "6dba701a1470d0c8e9c61c75100c8e3acf3c8955"
 #define WIFI_SSID   "RazanskyLab"
 #define WIFI_PASS   "WeLoveOptoacoustics"
-#define TOKEN "7DHHQiddU5wPhG5ZGEwP"
-char thingsboardServer[] = "116.203.61.127";
-WiFiClient client;
-ThingsBoard tb(client);
+AdafruitIO_WiFi io(IO_USERNAME, IO_KEY, WIFI_SSID, WIFI_PASS);
+AdafruitIO_Feed *padFeed = io.feed("padFeed");
+AdafruitIO_Feed *mouseFeed = io.feed("mouseFeed");
+AdafruitIO_Feed *pwmFeed = io.feed("pwmFeed");
 
-int status = WL_IDLE_STATUS;
-unsigned long lastSend;
 
-// we get 30 writes per minute
-const long updateIOTInterval = 0;  // interval at which to blink (milliseconds)
-unsigned long previousDataSend = updateIOTInterval;     // will store last time LED was updated
+#if defined(ARDUINO) && ARDUINO >= 100
+#define printByte(args)  write(args);
+#else
+#define printByte(args)  print(args,BYTE);
+#endif
+
+//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+// ThingSpeak Connection & Wifi
+#define SECRET_SSID "RazanskyLab"		// replace MySSID with your WiFi network name
+#define SECRET_PASS "WeLoveOptoacoustics"	// replace MyPassword with your WiFi password
+#define SECRET_CH_ID 859305			// replace 0000000 with your channel number
+#define SECRET_WRITE_APIKEY "AJ60CMZMC275VGXY"
+
+char ssid[] = SECRET_SSID;   // your network SSID (name)
+char pass[] = SECRET_PASS;   // your network password
+unsigned long myChannelNumber = SECRET_CH_ID;
+const char * myWriteAPIKey = SECRET_WRITE_APIKEY;
 
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 // Pin definitions
@@ -32,7 +46,7 @@ unsigned long previousDataSend = updateIOTInterval;     // will store last time 
 // variables for analog & digital temperature measurements
 const uint16_t THERMISTORNOMINAL = 10000;
 const float TEMPERATURENOMINAL = 25.0;
-const uint8_t N_SAMPLES = 10;
+const uint8_t N_SAMPLES = 5;
 const uint16_t BCOEFFICIENT = 3960;
 const uint16_t SERIESRESISTOR = 9970;
 const float targetTemperature = 37.0;
@@ -58,15 +72,27 @@ float pwmValue = 0; // set initial heating to 0
 int iPwmValue = 0; // inted pwm value
 
 // %%%%%%%%%%%%%%%
+uint8_t bell[8]  = {0x4, 0xe, 0xe, 0xe, 0x1f, 0x0, 0x4};
+uint8_t note[8]  = {0x2, 0x3, 0x2, 0xe, 0x1e, 0xc, 0x0};
 uint8_t lcd_clock[8] = {0x0, 0xe, 0x15, 0x17, 0x11, 0xe, 0x0};
 uint8_t heart[8] = {0x0, 0xa, 0x1f, 0x1f, 0xe, 0x4, 0x0};
+uint8_t duck[8]  = {0x0, 0xc, 0x1d, 0xf, 0xf, 0x6, 0x0};
 uint8_t check[8] = {0x0, 0x1 ,0x3, 0x16, 0x1c, 0x8, 0x0};
+uint8_t cross[8] = {0x0, 0x1b, 0xe, 0x4, 0xe, 0x1b, 0x0};
+uint8_t retarrow[8] = {	0x1, 0x1, 0x5, 0x9, 0x1f, 0x8, 0x4};
 
+
+//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+// misc variables
+const long updateIOTInterval = 20000;  // interval at which to blink (milliseconds)
+unsigned long previousDataSend = updateIOTInterval;     // will store last time LED was updated
 
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 // create all class members from libaries
 OneWire oneWire(ONE_WIRE_BUS);
 DallasTemperature TempSensor(&oneWire);
+WiFiClient  client;
+// LiquidCrystal_I2C lcd(0x27, 2, 1, 0, 4, 5, 6, 7, 3, POSITIVE);
 LiquidCrystal_I2C lcd(0x27,16,2);  // set the LCD address to 0x27 for a 16 chars and 2 line display
 
 
@@ -137,9 +163,9 @@ float control_heat_pad(float currentTemp){
 void setup_wifi(){
   if(WiFi.status() != WL_CONNECTED){
     Serial.print("Attempting to connect to SSID: ");
-    Serial.println(WIFI_SSID);
+    Serial.println(SECRET_SSID);
     while(WiFi.status() != WL_CONNECTED){
-      WiFi.begin(WIFI_SSID, WIFI_PASS);  // Connect to WPA/WPA2 network. Change this line if using open or WEP network
+      WiFi.begin(ssid, pass);  // Connect to WPA/WPA2 network. Change this line if using open or WEP network
       Serial.print(".");
       delay(5000);
     }
@@ -147,32 +173,32 @@ void setup_wifi(){
   }
 }
 
-void reconnect() {
-  // Loop until we're reconnected
-  while (!tb.connected()) {
-    Serial.print("Connecting to ThingsBoard node ...");
-    // Attempt to connect (clientId, username, password)
-    if ( tb.connect(thingsboardServer, TOKEN) ) {
-      Serial.println( "[DONE]" );
-    } else {
-      Serial.print( "[FAILED]" );
-      Serial.println( " : retrying in 5 seconds" );
-      // Wait 5 seconds before retrying
-      delay( 5000 );
-    }
-  }
-}
-
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 void send_iot_data(){
   static unsigned long previousDataSend = 0;
+  setup_wifi();
   if ((previousDataSend == 0) || (millis() - previousDataSend >= updateIOTInterval)) {
-    tb.sendTelemetryFloat("analTemp", analTemp);
-    tb.sendTelemetryFloat("padTemp", padTemp);
-    tb.sendTelemetryFloat("pwmValue", pwmValue);
+    // set the fields with the values
+    ThingSpeak.setField(1, analTemp);
+    ThingSpeak.setField(2, padTemp);
+    ThingSpeak.setField(3, targetTemperature);
+    ThingSpeak.setField(4, pwmValue);
+    String myStatus = "TestStatus";
+    ThingSpeak.setStatus(myStatus);
+
+    // write to the ThingSpeak channel
+    int x = ThingSpeak.writeFields(myChannelNumber, myWriteAPIKey);
+    if (x == 200){
+      Serial.println("Channel update successful.");
+    }
+    else{
+      Serial.println("Problem updating channel. HTTP error code " + String(x));
+    }
+
     previousDataSend = millis();
   }
 }
+
 
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -182,7 +208,6 @@ void setup(void) {
   lcd.createChar(0, lcd_clock);
   lcd.createChar(1, heart);
   lcd.createChar(2, check);
-  lcd.clear();
   lcd.home();
   delay(1000);
 
@@ -190,11 +215,38 @@ void setup(void) {
   // lcd.printByte(1); // heart
   // lcd.printByte(2); // check
 
+  lcd.print("Starting serial comms ");
+  lcd.printByte(0); // clock
+
   Serial.begin(9600);
   // wait for serial monitor to open
   while (!Serial);
+  lcd.clear();
 
-  setup_wifi();
+
+  // connect to io.adafruit.com
+  Serial.print("Connecting to Adafruit IO");
+  lcd.print("Joining Ada IO ");
+  lcd.printByte(0); // clock
+  lcd.setCursor(0, 1);
+  io.connect();
+  // wait for a connection
+  while (io.status() < AIO_CONNECTED)
+  {
+    Serial.print(".");
+    lcd.print(".");
+    delay(500);
+  }
+  lcd.clear();
+
+  // we are connected
+  Serial.println(io.statusText());
+  lcd.clear();
+  lcd.home();
+  lcd.print("Connected!");
+
+  // WiFi.mode(WIFI_STA);
+  // ThingSpeak.begin(client);  // Initialize ThingSpeak
 
   TempSensor.begin();   // Start TempSensor
   TempSensor.setResolution(12); // reduce resolution to reduce noise
@@ -207,36 +259,26 @@ void setup(void) {
     errContainer[iErr] = 0;
   }
   iErr = 0;
-
 }
 
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 void loop(void) {
-  status = WiFi.status();
-  if ( status != WL_CONNECTED) {
-    while ( status != WL_CONNECTED) {
-      Serial.print("Attempting to connect to WPA SSID: ");
-      Serial.println(WIFI_SSID);
-      // Connect to WPA/WPA2 network
-      status = WiFi.begin(WIFI_SSID, WIFI_PASS);
-      delay(500);
-    }
-    Serial.println("Connected to AP");
-  }
-
-  if ( !tb.connected() ) {
-    reconnect();
-  }
-
-
-  lcd.home();
+  // io.run(); is required for all sketches.
+  // it should always be present at the top of your loop
+  // function. it keeps the client connected to
+  // io.adafruit.com, and processes any incoming data.
+  io.run();
 
   analTemp = get_analog_temp();
   padTemp = get_digital_temp();
   pwmValue = control_heat_pad(currentTemp);
 
-  send_iot_data();
+  // send_iot_data();
+  mouseFeed->save(analTemp);
+  padFeed->save(padTemp);
+  pwmFeed->save(pwmValue);
+
 
   // serial print values
   Serial.print(analTemp);
@@ -246,20 +288,5 @@ void loop(void) {
   Serial.print(pwmValue);
   Serial.print(" ");
   Serial.println(targetTemperature);
-
-
-  // FIXME use sprintf instead!
-  // https://arduinobasics.blogspot.com/2019/05/sprintf-function.html
-  lcd.setCursor(6, 0);
-  lcd.print(" M:");
-  lcd.print(analTemp,1);
-  lcd.setCursor(0, 1);
-  lcd.print("P:");
-  lcd.print(padTemp,1);
-  lcd.print(" PW:");
-  lcd.print(pwmValue/255*100,0);
-  lcd.print("%");
-
-  tb.loop();
-
+  delay(5000);
 }

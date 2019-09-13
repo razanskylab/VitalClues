@@ -1,25 +1,36 @@
 #include <Arduino.h>
 #include <OneWire.h>
 #include <DallasTemperature.h>
-// #include <WiFiEsp.h>
 #include <ESP8266WiFi.h>
 #include <Wire.h>
 #include <LiquidCrystal_I2C.h>
-#include <ThingsBoard.h>
 
 
+//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+#include "AdafruitIO_WiFi.h"
+#define IO_USERNAME  "r0oland"
+#define IO_KEY       "6dba701a1470d0c8e9c61c75100c8e3acf3c8955"
 #define WIFI_SSID   "RazanskyLab"
 #define WIFI_PASS   "WeLoveOptoacoustics"
-#define TOKEN "7DHHQiddU5wPhG5ZGEwP"
-char thingsboardServer[] = "116.203.61.127";
-WiFiClient client;
-ThingsBoard tb(client);
 
-int status = WL_IDLE_STATUS;
-unsigned long lastSend;
+AdafruitIO_WiFi io(IO_USERNAME, IO_KEY, WIFI_SSID, WIFI_PASS);
+AdafruitIO_Feed *padFeed = io.feed("padFeed");
+AdafruitIO_Feed *mouseFeed = io.feed("mouseFeed");
+AdafruitIO_Feed *pwmFeed = io.feed("pwmFeed");
+
+#if defined(ARDUINO) && ARDUINO >= 100
+#define printByte(args)  write(args);
+#else
+#define printByte(args)  print(args,BYTE);
+#endif
+
+char ssid[] = SECRET_SSID;   // your network SSID (name)
+char pass[] = SECRET_PASS;   // your network password
+unsigned long myChannelNumber = SECRET_CH_ID;
+const char * myWriteAPIKey = SECRET_WRITE_APIKEY;
 
 // we get 30 writes per minute
-const long updateIOTInterval = 0;  // interval at which to blink (milliseconds)
+const long updateIOTInterval = 10000;  // interval at which to blink (milliseconds)
 unsigned long previousDataSend = updateIOTInterval;     // will store last time LED was updated
 
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -67,6 +78,8 @@ uint8_t check[8] = {0x0, 0x1 ,0x3, 0x16, 0x1c, 0x8, 0x0};
 // create all class members from libaries
 OneWire oneWire(ONE_WIRE_BUS);
 DallasTemperature TempSensor(&oneWire);
+WiFiClient  client;
+// LiquidCrystal_I2C lcd(0x27, 2, 1, 0, 4, 5, 6, 7, 3, POSITIVE);
 LiquidCrystal_I2C lcd(0x27,16,2);  // set the LCD address to 0x27 for a 16 chars and 2 line display
 
 
@@ -137,9 +150,9 @@ float control_heat_pad(float currentTemp){
 void setup_wifi(){
   if(WiFi.status() != WL_CONNECTED){
     Serial.print("Attempting to connect to SSID: ");
-    Serial.println(WIFI_SSID);
+    Serial.println(SECRET_SSID);
     while(WiFi.status() != WL_CONNECTED){
-      WiFi.begin(WIFI_SSID, WIFI_PASS);  // Connect to WPA/WPA2 network. Change this line if using open or WEP network
+      WiFi.begin(ssid, pass);  // Connect to WPA/WPA2 network. Change this line if using open or WEP network
       Serial.print(".");
       delay(5000);
     }
@@ -147,32 +160,17 @@ void setup_wifi(){
   }
 }
 
-void reconnect() {
-  // Loop until we're reconnected
-  while (!tb.connected()) {
-    Serial.print("Connecting to ThingsBoard node ...");
-    // Attempt to connect (clientId, username, password)
-    if ( tb.connect(thingsboardServer, TOKEN) ) {
-      Serial.println( "[DONE]" );
-    } else {
-      Serial.print( "[FAILED]" );
-      Serial.println( " : retrying in 5 seconds" );
-      // Wait 5 seconds before retrying
-      delay( 5000 );
-    }
-  }
-}
-
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 void send_iot_data(){
   static unsigned long previousDataSend = 0;
   if ((previousDataSend == 0) || (millis() - previousDataSend >= updateIOTInterval)) {
-    tb.sendTelemetryFloat("analTemp", analTemp);
-    tb.sendTelemetryFloat("padTemp", padTemp);
-    tb.sendTelemetryFloat("pwmValue", pwmValue);
+    mouseFeed->save(analTemp);
+    padFeed->save(padTemp);
+    pwmFeed->save(pwmValue);
     previousDataSend = millis();
   }
 }
+
 
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -194,7 +192,30 @@ void setup(void) {
   // wait for serial monitor to open
   while (!Serial);
 
-  setup_wifi();
+  // connect to io.adafruit.com
+  Serial.println();
+  Serial.print("Connecting to Adafruit IO");
+  lcd.print("Joining AIO ");
+  lcd.printByte(0); // clock
+  lcd.setCursor(0, 1);
+  io.connect();
+  // wait for a connection
+  while (io.status() < AIO_CONNECTED)
+  {
+    Serial.print(".");
+    lcd.print(".");
+    delay(500);
+  }
+  lcd.clear();
+
+  // we are connected
+  Serial.println(io.statusText());
+  lcd.clear();
+  lcd.home();
+  lcd.print("Connected!");
+
+  // WiFi.mode(WIFI_STA);
+  // ThingSpeak.begin(client);  // Initialize ThingSpeak
 
   TempSensor.begin();   // Start TempSensor
   TempSensor.setResolution(12); // reduce resolution to reduce noise
@@ -207,30 +228,27 @@ void setup(void) {
     errContainer[iErr] = 0;
   }
   iErr = 0;
-
 }
 
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 void loop(void) {
-  status = WiFi.status();
-  if ( status != WL_CONNECTED) {
-    while ( status != WL_CONNECTED) {
-      Serial.print("Attempting to connect to WPA SSID: ");
-      Serial.println(WIFI_SSID);
-      // Connect to WPA/WPA2 network
-      status = WiFi.begin(WIFI_SSID, WIFI_PASS);
-      delay(500);
-    }
-    Serial.println("Connected to AP");
-  }
-
-  if ( !tb.connected() ) {
-    reconnect();
-  }
-
-
+  // io.run(); is required for all sketches.
+  // it should always be present at the top of your loop
+  // function. it keeps the client connected to
+  // io.adafruit.com, and processes any incoming data.
   lcd.home();
+  if (io.status() < AIO_CONNECTED) {
+    lcd.clear();
+    lcd.print("Wifi failed!");
+    lcd.setCursor(0, 1);
+    lcd.print(io.status());
+  }
+  else {
+    lcd.print("AIO: ");
+    lcd.printByte(2);
+    io.run();
+  }
 
   analTemp = get_analog_temp();
   padTemp = get_digital_temp();
@@ -259,7 +277,4 @@ void loop(void) {
   lcd.print(" PW:");
   lcd.print(pwmValue/255*100,0);
   lcd.print("%");
-
-  tb.loop();
-
 }
