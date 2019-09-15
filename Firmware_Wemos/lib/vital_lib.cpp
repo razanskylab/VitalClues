@@ -33,8 +33,8 @@ void Vital::get_digital_temp(){
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 // function to read out digital sensor placed on pad
 void Vital::control_heat_pad(){
-  get_analog_temp();
-  get_digital_temp();
+  this->get_analog_temp();
+  this->get_digital_temp();
 
   err = targetTemperature - analTemp; // calculate error
   errContainer[iErr] = err;
