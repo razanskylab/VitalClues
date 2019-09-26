@@ -53,6 +53,7 @@ void Vital::get_digital_temp(){
   V_TempSensor.requestTemperatures();
   padTemp = V_TempSensor.getTempC(*PadTempSens);
   roomTemp = V_TempSensor.getTempC(*RoomTempSens);
+  ambTemp = V_TempSensor.getTempC(*AmbientTempSens);
 }
 
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -116,9 +117,8 @@ void Vital::setup_lcd(){
 void Vital::update_lcd(bool iotConnected){
   // FIXME use sprintf instead!
   // https://arduinobasics.blogspot.com/2019/05/sprintf-function.html
-  V_LCD.home();
-
-  V_LCD.print("IOT:");
+  V_LCD.setCursor(0, 0);
+  V_LCD.print("AIO:");
   if (iotConnected){
     V_LCD.printByte(2);
   }
@@ -128,17 +128,12 @@ void Vital::update_lcd(bool iotConnected){
 
   V_LCD.setCursor(6, 0);
   char data[40];
-  sprintf(data, "M:%02.1f P:%02.1f R:%02.1f Pw:%03.0f%%      ",
+  sprintf(data, " M:%02.1f P:%02.1f R:%02.1f Pw:%03.0f%%       ",
     analTemp,padTemp,roomTemp,pwmValue/255*100);
   V_LCD.print(data);
-  // V_LCD.print(analTemp,1);
-  // V_LCD.print(" P:");
-  // V_LCD.print(padTemp,1);
-  // V_LCD.print(" R:");
-  // V_LCD.print(roomTemp,1);
-  // V_LCD.print(" P:");
-  // V_LCD.print(pwmValue/255*100,0);
-  // V_LCD.print("%");
+  V_LCD.setCursor(0, 1);
+  sprintf(data, "Ambient:%02.1f          ",ambTemp);
+  V_LCD.print(data);
 }
 
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

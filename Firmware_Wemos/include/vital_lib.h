@@ -79,6 +79,7 @@ class Vital
     float analTemp = 0.0; // temperature measured in anus
     float padTemp = 0.0;
     float roomTemp = 0.0;
+    float ambTemp = 0.0;
 
     //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     // PID variables

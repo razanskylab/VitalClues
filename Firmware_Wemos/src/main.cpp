@@ -1,10 +1,10 @@
 #include "..\lib\vital_lib.cpp"
-#include "..\lib\thingsboard_lib.cpp"
+#include "..\lib\iot_lib.cpp"
 #include "..\include\secrets.h"
 
-uint_fast32_t updateIOTInterval = 0;
+uint_fast32_t updateIOTInterval = 10000;
 
-Iot MyIot(TB_SERVER,TB_TOKEN,updateIOTInterval);
+Iot MyIot(IO_USERNAME,IO_KEY,WIFI_SSID,WIFI_PASS,updateIOTInterval);
 Vital MyVital(ONE_WIRE_BUS,LCD_ADDRESS,LCD_COLS,LCD_ROWS);
 
 DeviceAddress PAD_SENS  = {0x28, 0xFF, 0x67, 0x98, 0x90, 0x16, 0x04, 0xFA};
@@ -25,8 +25,14 @@ void setup(void) {
 
   MyVital.get_temp_sensor_address();
 
-  MyIot.check_connection(); // connect to IOT server
-
+  // MyIot.check_connection(); // connect to IOT server
+  MyIot.aio.connect();
+  // wait for a connection
+  while (MyIot.aio.status() < AIO_CONNECTED)
+  {
+    MyVital.V_LCD.print(".");
+    delay(500);
+  }
 }
 
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -37,7 +43,7 @@ void loop(void) {
 
   MyIot.send_data(MyVital.analTemp, MyVital.padTemp, MyVital.pwmValue);
 
-  MyVital.update_lcd(MyIot.tb.connected());
+  bool aioConnected = (MyIot.aio.status() == AIO_CONNECTED);
+  MyVital.update_lcd(aioConnected); // FIXME -> replace with proper conn. check
   MyVital.update_serial();
-  MyIot.tb.loop();
 }
