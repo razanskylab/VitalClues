@@ -1,18 +1,15 @@
 #include "thingsboard_lib.h"
 // define functions here
 
-// Iot::Iot(Client &client, const char* newServer, const char* newToken) :tb(WiFiClient) {
-Iot::Iot(const char* newServer, const char* newToken) :tb(client) {
+Iot::Iot(const char* newServer, const char* newToken, uint_fast32_t updateInt):tb(client)
+{
   device_token = newToken;
   server = newServer;
+  updateIOTInterval = updateInt;
 };
-Iot::Iot(Client &client) :tb(client) {};
-Iot::Iot() :tb(client) {};
-
 
 // %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 void Iot::send_data(float analTemp, float padTemp, float pwmValue){
-  static unsigned long previousDataSend = 0;
   if ((previousDataSend == 0) || (millis() - previousDataSend >= updateIOTInterval)) {
     tb.sendTelemetryFloat("analTemp", analTemp);
     tb.sendTelemetryFloat("padTemp", padTemp);

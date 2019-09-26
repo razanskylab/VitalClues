@@ -1,43 +1,31 @@
 #include "..\lib\vital_lib.cpp"
 #include "..\lib\thingsboard_lib.cpp"
+#include "..\include\secrets.h"
 
-const char server[] = "116.203.61.127";
-const char token[] = "7DHHQiddU5wPhG5ZGEwP";
+uint_fast32_t updateIOTInterval = 0;
 
-Vital MyVital(ONE_WIRE_BUS,0x27,16,2);
+Iot MyIot(TB_SERVER,TB_TOKEN,updateIOTInterval);
+Vital MyVital(ONE_WIRE_BUS,LCD_ADDRESS,LCD_COLS,LCD_ROWS);
 
-Iot MyIot(server,token);
+DeviceAddress PAD_SENS  = {0x28, 0xFF, 0x67, 0x98, 0x90, 0x16, 0x04, 0xFA};
+DeviceAddress ROOM_SENS = {0x28, 0x70, 0x56, 0x79, 0xA2, 0x00, 0x03, 0xEF};
+DeviceAddress AMB_SENS  = {0x28, 0xF9, 0x9D, 0x79, 0xA2, 0x00, 0x03, 0xC1};
 
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 void setup(void) {
-  MyVital.V_LCD.init();                      // initialize the lcd
-  MyVital.V_LCD.backlight();
-  MyVital.V_LCD.createChar(0, lcd_clock);
-  MyVital.V_LCD.createChar(1, heart);
-  MyVital.V_LCD.createChar(2, check);
-  MyVital.V_LCD.clear();
-  MyVital.V_LCD.home();
-  Serial.begin(9600);
-  Serial.println();
-  Serial.println("-------------------------------------------------------------");
-  Serial.println("-----------------------   Vital Clues   ---------------------");
-  Serial.println("--------------------   Ver.01 | JR | 2019  ------------------");
-  Serial.println("-------------------------------------------------------------");
-  delay(1000);
+  setup_serial();
+
+  MyVital.setup_lcd();
+  MyVital.setup_io_pins();
+  MyVital.setup_temp_sensor(12); // set resolution for temp sensor
+  MyVital.PadTempSens =     &PAD_SENS;
+  MyVital.RoomTempSens =    &ROOM_SENS;
+  MyVital.AmbientTempSens = &AMB_SENS;
+
+  MyVital.get_temp_sensor_address();
 
   MyIot.check_connection(); // connect to IOT server
-  MyVital.V_TempSensor.begin();   // Start MyVital.V_TempSensor
-  MyVital.V_TempSensor.setResolution(12); // reduce resolution to reduce noise
-
-  pinMode(CONTROL_PIN, OUTPUT); // set relay pin as digital output
-  analogWrite(CONTROL_PIN, MyVital.pwmValue);
-
-  // reset error container to 0s
-  for (MyVital.iErr = 0; MyVital.iErr < MyVital.nInt; MyVital.iErr++){
-    MyVital.errContainer[MyVital.iErr] = 0;
-  }
-  MyVital.iErr = 0;
 
 }
 
@@ -45,32 +33,11 @@ void setup(void) {
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 void loop(void) {
   MyIot.check_connection();
-  MyVital.V_LCD.home();
-  MyVital.control_heat_pad();
+  MyVital.control_heat_pads();
 
   MyIot.send_data(MyVital.analTemp, MyVital.padTemp, MyVital.pwmValue);
 
-  // serial print values
-  Serial.print(MyVital.analTemp);
-  Serial.print(" ");
-  Serial.print(MyVital.padTemp);
-  Serial.print(" ");
-  Serial.print(MyVital.pwmValue);
-  Serial.print(" ");
-  Serial.println(MyVital.targetTemperature);
-
-
-  // FIXME use sprintf instead!
-  // https://arduinobasics.blogspot.com/2019/05/sprintf-function.html
-  MyVital.V_LCD.setCursor(6, 0);
-  MyVital.V_LCD.print(" M:");
-  MyVital.V_LCD.print(MyVital.analTemp,1);
-  MyVital.V_LCD.setCursor(0, 1);
-  MyVital.V_LCD.print("P:");
-  MyVital.V_LCD.print(MyVital.padTemp,1);
-  MyVital.V_LCD.print(" PW:");
-  MyVital.V_LCD.print(MyVital.pwmValue/255*100,0);
-  MyVital.V_LCD.print("%");
-
+  MyVital.update_lcd(MyIot.tb.connected());
+  MyVital.update_serial();
   MyIot.tb.loop();
 }

@@ -7,47 +7,63 @@
 #include <ESP8266WiFi.h>
 #include <Wire.h>
 #include <LiquidCrystal_I2C.h>
-
-#define WIFI_SSID "RazanskyLab"
-#define WIFI_PASS "WeLoveOptoacoustics"
-
-// we get 30 writes per minute
-const long updateIOTInterval = 0;  // interval at which to blink (milliseconds)
-unsigned long previousDataSend = updateIOTInterval;     // will store last time LED was updated
+#include "..\include\secrets.h"
 
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 // Pin definitions
-#define ONE_WIRE_BUS D3 // temp. sensor connected on D2
-#define CONTROL_PIN D4 // transistor controll pin
-#define THERMISTORPIN A0
+const uint8_t ONE_WIRE_BUS = D3; // temp. sensor connected on D2
+const uint8_t MOUSE_PAD_PIN = D4; // transistor controll pin
+const uint8_t MOUSE_ROOM_PIN = D5; // transistor controll pin
+const uint8_t THERMISTORPIN = A0;
 
-// %%%%%%%%%%%%%%%
+// % LCD related settings and stuff...------------------------------------------
+const uint8_t LCD_ADDRESS = 0x27;
+const uint8_t LCD_COLS = 40;
+const uint8_t LCD_ROWS = 2;
+
 uint8_t lcd_clock[8] = {0x0, 0xe, 0x15, 0x17, 0x11, 0xe, 0x0};
 uint8_t heart[8] = {0x0, 0xa, 0x1f, 0x1f, 0xe, 0x4, 0x0};
 uint8_t check[8] = {0x0, 0x1 ,0x3, 0x16, 0x1c, 0x8, 0x0};
 
+#if defined(ARDUINO) && ARDUINO >= 100
+#define printByte(args)  write(args);
+#else
+#define printByte(args)  print(args,BYTE);
+#endif
 
-//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-// create all class members from libaries
-OneWire oneWire(ONE_WIRE_BUS);
-DallasTemperature TempSensor(&oneWire);
-LiquidCrystal_I2C lcd(0x27,16,2);  // set the LCD address to 0x27 for a 16 chars and 2 line display
+// General Function Declarations
+void setup_serial();
 
+// Vital Class Definition %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 class Vital
 {
   public:
-    Vital(uint8_t oneWireBus, uint8_t lcd_addr, uint8_t lcd_cols, uint8_t lcd_rows)
-      :V_OneWire(oneWireBus),
+    Vital(uint8_t oneWireBus, uint8_t lcd_addr, uint8_t lcd_cols, uint8_t lcd_rows):
+      V_OneWire(oneWireBus),
       V_LCD(lcd_addr,lcd_cols,lcd_rows),
-      V_TempSensor(&V_OneWire) {};
+      V_TempSensor(&V_OneWire)
+      {
+        for (iErr = 0; iErr < nInt; iErr++)  // reset error container to 0s
+          errContainer[iErr] = 0;
+        iErr = 0;
+      };
 
+    void setup_lcd();
+    void setup_io_pins();
+    void setup_temp_sensor(uint8_t sensReso);
+    void get_temp_sensor_address();
+    void update_serial();
     void get_analog_temp();
     void get_digital_temp();
-    void control_heat_pad();
+    void control_heat_pads();
+    void update_lcd(bool iotConnected);
 
     LiquidCrystal_I2C V_LCD;
-    DallasTemperature V_TempSensor;
     OneWire V_OneWire;
+    DallasTemperature V_TempSensor;
+    DeviceAddress* PadTempSens;
+    DeviceAddress* RoomTempSens;
+    DeviceAddress* AmbientTempSens;
 
     //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     // variables for analog & digital temperature measurements
@@ -62,6 +78,7 @@ class Vital
     float maxPadTemp = 50.0;
     float analTemp = 0.0; // temperature measured in anus
     float padTemp = 0.0;
+    float roomTemp = 0.0;
 
     //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     // PID variables
