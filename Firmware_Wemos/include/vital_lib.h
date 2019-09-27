@@ -75,7 +75,7 @@ class Vital
     const float faultTemperature = -120; // TODO make sure to use this!
 
     float targetTemperature = 37.0;
-    float maxPadTemp = 50.0;
+    float maxPadTemp = 45.0;
     float analTemp = 0.0; // temperature measured in anus
     float padTemp = 0.0;
     float roomTemp = 0.0;

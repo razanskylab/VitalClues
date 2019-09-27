@@ -31,7 +31,7 @@ void setup(void) {
   while (MyIot.aio.status() < AIO_CONNECTED)
   {
     MyVital.V_LCD.print(".");
-    delay(500);
+    delay(250);
   }
 }
 
@@ -41,7 +41,7 @@ void loop(void) {
   MyIot.check_connection();
   MyVital.control_heat_pads();
 
-  MyIot.send_data(MyVital.analTemp, MyVital.padTemp, MyVital.pwmValue);
+  MyIot.send_data(MyVital.analTemp, MyVital.padTemp, MyVital.pwmValue, MyVital.roomTemp, MyVital.ambTemp);
 
   bool aioConnected = (MyIot.aio.status() == AIO_CONNECTED);
   MyVital.update_lcd(aioConnected); // FIXME -> replace with proper conn. check

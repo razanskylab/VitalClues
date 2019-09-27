@@ -15,17 +15,20 @@ class Iot
         padFeed = aio.feed("padFeed");
         mouseFeed = aio.feed("mouseFeed");
         pwmFeed = aio.feed("pwmFeed");
+        roomFeed = aio.feed("roomFeed");
+        ambFeed = aio.feed("ambFeed");
       };
     inline ~Iot(){};
 
-    inline void send_data(float analTemp, float padTemp, float pwmValue);
+    inline void send_data(float analTemp, float padTemp, float pwmValue, float roomTemp, float ambTemp);
     inline void check_connection();
 
     AdafruitIO_WiFi aio; // handles connection to thing board
     AdafruitIO_Feed *padFeed;
     AdafruitIO_Feed *mouseFeed;
     AdafruitIO_Feed *pwmFeed;
-
+    AdafruitIO_Feed *roomFeed;
+    AdafruitIO_Feed *ambFeed;
 
     WiFiClient client; // handles connection to thing board
     uint_fast8_t wifiStatus = WL_IDLE_STATUS;
