@@ -3,9 +3,9 @@
 
 // include libraries we need
 #include <OneWire.h>
-#include <DallasTemperature.h>
+// #include <DallasTemperature.h>
 
-#define ONE_WIRE_BUS 2 // temp. sensor connected on D2
+// #define ONE_WIRE_BUS 2 // temp. sensor connected on D2
 #define CONTROL_PIN 3 // relay controlled via D3
 
 // which analog pin to connect
@@ -22,12 +22,9 @@
 // the value of the 'other' resistor
 #define SERIESRESISTOR 9970
 
-float maxPadTemp = 50;
 float currentTemp;
-float targetTemperature = 48; // in Celcius, do not use more than 50!!!
-float analTemp; // temperature measured in anus
-float padTemp;
-float faultTemperature = -120;
+float targetTemperature = 38; // in Celcius, do not use more than 50!!!
+float waterTemp; // temperature measured in anus
 
 // PID variables
 float err; // difference between measured and set point
@@ -45,23 +42,9 @@ float pwmValue = 0; // set initial heating to 0
 int iPwmValue = 0; // inted pwm value
 
 // create temperature sensor class member from library
-OneWire oneWire(ONE_WIRE_BUS);
-DallasTemperature TempSensor(&oneWire);
+// OneWire oneWire(ONE_WIRE_BUS);
+// DallasTemperature TempSensor(&oneWire);
 
-void setup(void) {
-  Serial.begin(9600);
-  analogReference(EXTERNAL);
-  TempSensor.begin();   // Start TempSensor
-  TempSensor.setResolution(12); // reduce resolution to reduce noise
-  pinMode(CONTROL_PIN, OUTPUT); // set relay pin as digital output
-  analogWrite(CONTROL_PIN, pwmValue);
-
-  // reset error container to 0s
-  for (iErr = 0; iErr < nInt; iErr++)
-    errContainer[iErr] = 0;
-
-  iErr = 0;
-}
 
 // function to read out smaller sensor placed in anus of animal
 float getAnalogTemp(){
@@ -75,29 +58,34 @@ float getAnalogTemp(){
   average = 1023 / average - 1;
   average = SERIESRESISTOR / average;
 
-  analTemp = average / THERMISTORNOMINAL;     // (R/Ro)
-  analTemp = log(analTemp);                  // ln(R/Ro)
-  analTemp /= BCOEFFICIENT;                   // 1/B * ln(R/Ro)
-  analTemp += 1.0 / (TEMPERATURENOMINAL + 273.15); // + (1/To)
-  analTemp = 1.0 / analTemp;                 // Invert
-  analTemp -= 273.15;                         // convert to C
-  return analTemp;
+  waterTemp = average / THERMISTORNOMINAL;     // (R/Ro)
+  waterTemp = log(waterTemp);                  // ln(R/Ro)
+  waterTemp /= BCOEFFICIENT;                   // 1/B * ln(R/Ro)
+  waterTemp += 1.0 / (TEMPERATURENOMINAL + 273.15); // + (1/To)
+  waterTemp = 1.0 / waterTemp;                 // Invert
+  waterTemp -= 273.15;                         // convert to C
+  return waterTemp;
 }
 
-// function to read out digital sensor placed on pad
-float getDigitalTemp(){
-  // update temperature readings.
-  TempSensor.requestTemperatures();
-  currentTemp = TempSensor.getTempCByIndex(0);
-  return currentTemp;
+void setup(void) {
+  Serial.begin(9600);
+  analogReference(EXTERNAL);
+  pinMode(CONTROL_PIN, OUTPUT); // set relay pin as digital output
+  analogWrite(CONTROL_PIN, pwmValue);
+
+  // reset error container to 0s
+  for (iErr = 0; iErr < nInt; iErr++)
+    errContainer[iErr] = 0;
+
+  iErr = 0;
 }
+
 
 void loop(void) {
 
-  analTemp = getAnalogTemp();
-  padTemp = getDigitalTemp();
+  waterTemp = getAnalogTemp();
 
-  err = targetTemperature - analTemp; // calculate error
+  err = targetTemperature - waterTemp; // calculate error
   errContainer[iErr] = err;
   if (iErr >= nInt)
     iErr = 0;
@@ -120,15 +108,9 @@ void loop(void) {
     pwmValue = 255;
   }
 
-  // if pad termperature is too high, disable, otherwise we carbonize the mouse
-  if (padTemp > maxPadTemp)
-    pwmValue = 0;
-
   analogWrite(CONTROL_PIN, pwmValue);
 
-  Serial.print(analTemp);
-  Serial.print(" ");
-  Serial.print(padTemp);
+  Serial.print(waterTemp);
   Serial.print(" ");
   Serial.print(pwmValue);
   Serial.print(" ");
@@ -136,5 +118,5 @@ void loop(void) {
   // Serial.println(targetTemperature);
 
 
-  // delay(500); // no need to check more than 2x per second...
+  delay(500); // no need to check more than 2x per second...
 }
