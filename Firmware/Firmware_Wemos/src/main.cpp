@@ -5,7 +5,8 @@
 uint_fast32_t updateIOTInterval = 10000;
 
 Iot MyIot(IO_USERNAME,IO_KEY,WIFI_SSID,WIFI_PASS,updateIOTInterval);
-Vital MyVital(ONE_WIRE_BUS,LCD_ADDRESS,LCD_COLS,LCD_ROWS);
+Vital MyVital(ONE_WIRE_BUS);
+
 
 DeviceAddress PAD_SENS  = {0x28, 0xFF, 0x67, 0x98, 0x90, 0x16, 0x04, 0xFA};
 DeviceAddress ROOM_SENS = {0x28, 0x70, 0x56, 0x79, 0xA2, 0x00, 0x03, 0xEF};
@@ -16,23 +17,33 @@ DeviceAddress AMB_SENS  = {0x28, 0xF9, 0x9D, 0x79, 0xA2, 0x00, 0x03, 0xC1};
 void setup(void) {
   setup_serial();
 
-  MyVital.setup_lcd();
+  MyVital.setup_screen();
+
+  MyVital.screen_print("Setting up pins..."); 
   MyVital.setup_io_pins();
+  MyVital.screen_println("done!"); 
+
+  MyVital.screen_print("Setting up sensors..."); 
   MyVital.setup_temp_sensor(12); // set resolution for temp sensor
   MyVital.PadTempSens =     &PAD_SENS;
   MyVital.RoomTempSens =    &ROOM_SENS;
   MyVital.AmbientTempSens = &AMB_SENS;
-
   MyVital.get_temp_sensor_address();
+  MyVital.screen_println("done!"); 
 
-  // MyIot.check_connection(); // connect to IOT server
+  MyVital.screen_println("IOT connecting:"); 
   MyIot.aio.connect();
   // wait for a connection
   while (MyIot.aio.status() < AIO_CONNECTED)
   {
-    MyVital.V_LCD.print(".");
-    delay(250);
+    MyVital.screen_print(".");
+    delay(500);
   }
+  MyVital.screen_println("connected!");
+
+  MyVital.screen_print("Finding time server.");
+  configTime(TIME_ZONE*3600, 0 , "pool.ntp.org", "time.nist.gov"); // 
+  delay(500);
 }
 
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -44,6 +55,9 @@ void loop(void) {
   MyIot.send_data(MyVital.analTemp, MyVital.padTemp, MyVital.pwmValue, MyVital.roomTemp, MyVital.ambTemp);
 
   bool aioConnected = (MyIot.aio.status() == AIO_CONNECTED);
-  MyVital.update_lcd(aioConnected); // FIXME -> replace with proper conn. check
+  MyVital.update_screen(aioConnected);
   MyVital.update_serial();
 }
+
+
+

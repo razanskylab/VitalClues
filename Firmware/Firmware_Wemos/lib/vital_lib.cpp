@@ -16,8 +16,22 @@ void setup_serial(){
 // define Vital methods here
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+//------------------------------------------------------------------------------
+// setup screen
+void Vital::setup_screen(){
+  // setup screen, say hello
+  V_Screen.begin(); 
+  V_Screen.clearBuffer();
+  V_Screen.setFont(u8g2_font_5x8_mr); 
+  this->screen_go_next_line(); // go to first line
+  this->screen_print("Vital Clues Mouse Monitor");
+  V_Screen.setCursor(0,LINE_SPACING*8); // print signature in last line
+  this->screen_print("Laser Hannes 2020");
+  this->screen_go_next_line(); // go to first line
+  delay(1000);
+}
 
-//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+//------------------------------------------------------------------------------
 // setup IO PINs
 void Vital::setup_io_pins(){
   pinMode(MOUSE_PAD_PIN, OUTPUT); // set relay pin as digital output
@@ -26,6 +40,58 @@ void Vital::setup_io_pins(){
   analogWrite(MOUSE_ROOM_PIN, 0);
 }
 
+//------------------------------------------------------------------------------
+void Vital::setup_temp_sensor(uint8_t sensReso){
+  V_TempSensor.begin();   // Start MyVital.V_TempSensor
+  V_TempSensor.setResolution(sensReso); // reduce resolution to reduce noise
+}
+
+//------------------------------------------------------------------------------
+void Vital::screen_go_next_line(){
+  // goes to next line defined by LINE_SPACING
+  V_Screen.setCursor(0,LINE_SPACING*++currentLine);
+}
+
+//------------------------------------------------------------------------------
+void Vital::screen_println(String printStr, bool updateBuffer){
+  V_Screen.print(printStr); 
+  if (updateBuffer)
+    V_Screen.sendBuffer();
+  this->screen_go_next_line();
+}
+
+//------------------------------------------------------------------------------
+void Vital::screen_print(String printStr, bool updateBuffer){
+  V_Screen.print(printStr); 
+  if (updateBuffer)
+    V_Screen.sendBuffer();
+}
+
+//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+// do stuff here!
+void Vital::update_screen(bool iotConnected){
+  V_Screen.clearBuffer();
+  currentLine = 0;
+  this->screen_go_next_line(); // go to first line
+  this->screen_println("Vital Clues Mouse Monitor",false);
+  time_t now = time(nullptr);
+  this->screen_println(ctime(&now),false); 
+
+  char data[40];
+  sprintf(data, "Mouse: %02.1f",analTemp);
+  this->screen_println(data,false);
+
+  sprintf(data, "  Pad: %02.1f (%03.0f%%)",padTemp,pwmValue/255*100);
+  this->screen_println(data,false);
+
+  sprintf(data, " Room: %02.1f ", analTemp);
+  this->screen_println(data,false);
+
+  sprintf(data, "  Amb: %02.1f",ambTemp);
+  this->screen_println(data,true);
+}
+
+//------------------------------------------------------------------------------
 // function to read out smaller sensor placed in anus of animal
 void Vital::get_analog_temp(){
   float average = 0;
@@ -97,43 +163,6 @@ void Vital::control_heat_pads(){
     analogWrite(MOUSE_ROOM_PIN,0);
   else
     analogWrite(MOUSE_ROOM_PIN,255);
-
-}
-
-//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-// setup small LCD
-void Vital::setup_lcd(){
-  V_LCD.init();                      // initialize the lcd
-  V_LCD.backlight();
-  V_LCD.createChar(0, lcd_clock);
-  V_LCD.createChar(1, heart);
-  V_LCD.createChar(2, check);
-  V_LCD.clear();
-  V_LCD.home();
-}
-
-//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-// do stuff here!
-void Vital::update_lcd(bool iotConnected){
-  // FIXME use sprintf instead!
-  // https://arduinobasics.blogspot.com/2019/05/sprintf-function.html
-  V_LCD.setCursor(0, 0);
-  V_LCD.print("AIO:");
-  if (iotConnected){
-    V_LCD.printByte(2);
-  }
-  else {
-    V_LCD.print("X");
-  }
-
-  V_LCD.setCursor(6, 0);
-  char data[40];
-  sprintf(data, " M:%02.1f P:%02.1f R:%02.1f Pw:%03.0f%%       ",
-    analTemp,padTemp,roomTemp,pwmValue/255*100);
-  V_LCD.print(data);
-  V_LCD.setCursor(0, 1);
-  sprintf(data, "Ambient:%02.1f          ",ambTemp);
-  V_LCD.print(data);
 }
 
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -149,13 +178,6 @@ void Vital::update_serial(){
   Serial.print(pwmValue);
   Serial.print(" ");
   Serial.println(targetTemperature);
-}
-
-
-// %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-void Vital::setup_temp_sensor(uint8_t sensReso){
-  V_TempSensor.begin();   // Start MyVital.V_TempSensor
-  V_TempSensor.setResolution(sensReso); // reduce resolution to reduce noise
 }
 
 // %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
